@@ -1654,16 +1654,22 @@ public:
                   SmallVectorImpl<Value> &result) {
     size_t operandSize = llvm::range_size(operands);
     size_t typeSize = llvm::range_size(types);
-    if (operandSize != typeSize) {
+    if (typeSize != 0 && operandSize != typeSize) {
       // If no location was provided, report errors at the beginning of the op.
       return emitError(loc.isValid() ? loc : getNameLoc())
              << "number of operands and types do not match: got " << operandSize
              << " operands and " << typeSize << " types";
     }
 
-    for (auto [operand, type] : llvm::zip_equal(operands, types))
-      if (resolveOperand(operand, type, result))
-        return failure();
+    if (typeSize == 0) {
+      for (auto it : operands)
+        if (resolveOperand(it, Type(), result))
+          return failure();
+    } else {
+      for (auto [operand, type] : llvm::zip_equal(operands, types))
+        if (resolveOperand(operand, type, result))
+          return failure();
+    }
     return success();
   }
 
