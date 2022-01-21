@@ -688,32 +688,6 @@ func.func @error_at_end_of_line() {
 
 // -----
 
-func.func @drop_references_on_block_parse_error(){
-  "test.user"(%i, %1) : (index, index) -> ()
-  "test.op_with_region"() ({
-  ^bb0(%i : index):
-    // expected-error @below{{expected operation name in quotes}}
-    %1 = "test.foo"() : () -> (index)
-    // Syntax error to abort parsing this block.
-    123
-  }) : () -> ()
-  return
-}
-
-// -----
-
-// expected-note@+1 {{defined here}}
-func.func @foo(%arg0: i64, %arg1: memref<1xf64>) {
-    cf.br ^bb1
-
-  ^bb1:
-    // expected-error@+1 {{value '%arg1' was defined in separate block and requires explicit type definition}}
-    test.format_operand_optional_type_op %arg0, %arg1
-    return
-}
-
-// -----
-
 func.func @foo() {
     cf.br ^bb2
 
