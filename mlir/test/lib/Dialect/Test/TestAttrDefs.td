@@ -387,6 +387,12 @@ def TestConstMemorySpaceAttr : Test_Attr<"TestConstMemorySpace", [
   let assemblyFormat = "(`<` $addressSpace^ `>`)?";
 }
 
+def TestAttrNewlineAndIndent : Test_Attr<"TestAttrNewlineAndIndent"> {
+  let mnemonic = "newline_and_indent";
+  let parameters = (ins "::mlir::Type":$indentType);
+  let hasCustomAssemblyFormat = 1;
+}
+
 // Test custom location handling.
 def TestCustomLocationAttr : Test_LocAttr<"TestCustomLocation"> {
   let mnemonic = "custom_location";
