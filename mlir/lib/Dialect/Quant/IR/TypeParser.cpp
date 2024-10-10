@@ -212,10 +212,11 @@ isScaleInExpressedTypeRange(function_ref<InFlightDiagnostic()> emitError,
                             Type expressedType, double scale) {
   auto floatType = cast<FloatType>(expressedType);
   double minScale =
-      APFloat::getSmallest(floatType.getFloatSemantics()).convertToDouble();
+      APFloat::getLargest(floatType.getFloatSemantics(), /*Negative=*/true)
+          .convertToDouble();
   double maxScale =
       APFloat::getLargest(floatType.getFloatSemantics()).convertToDouble();
-  if (scale < minScale || scale > maxScale)
+  if (scale < minScale || scale > maxScale || std::isnan(scale))
     return emitError() << "scale " << scale << " out of expressed type range ["
                        << minScale << ", " << maxScale << "]";
   return success();
