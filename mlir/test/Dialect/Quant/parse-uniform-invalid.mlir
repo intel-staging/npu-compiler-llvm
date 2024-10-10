@@ -106,11 +106,6 @@
 !qalias = !quant.uniform<i8<-4:3>:f33, 0.99872:127>
 
 // -----
-// Illegal scale: negative
-// expected-error@+1 {{scale -1.000000e+00 out of expressed type range}}
-!qalias = !quant.uniform<i8<-4:3>:f32, -1.0:127>
-
-// -----
 // Illegal uniform params: missing quantized dimension
 // expected-error@+1 {{expected integer value}}
 !qalias = !quant.uniform<i8<-4:3>:f32:, {2.000000e+02:-19.987200e-01:1}>
@@ -127,24 +122,24 @@
 !qalias = !quant.uniform<i8:f32:-1, {2.0,3.0:1}>
 
 // -----
-// Scale f16 underflow
-// expected-error@+1 {{scale 5.800000e-08 out of expressed type range}}
-!qalias = !quant.uniform<i8:f16, 5.8e-8>
-
-// -----
 // Scale f16 overflow
 // expected-error@+1 {{scale 6.600000e+04 out of expressed type range}}
 !qalias = !quant.uniform<i8:f16, 6.6e4>
 
 // -----
-// Scale f16 underflow in per-axis quantization
-// expected-error@+1 {{scale 5.800000e-08 out of expressed type range}}
-!qalias = !quant.uniform<i8:f16:1, {2.0,5.8e-8}>
+// Scale f16 negative overflow
+// expected-error@+1 {{scale -6.600000e+04 out of expressed type range}}
+!qalias = !quant.uniform<i8:f16, -6.6e4>
 
 // -----
 // Scale f16 overflow in per-axis quantization
 // expected-error@+1 {{scale 6.600000e+04 out of expressed type range}}
 !qalias = !quant.uniform<i8:f16:1, {2.0,6.6e4}>
+
+// -----
+// Scale f16 negative overflow in per-axis quantization
+// expected-error@+1 {{scale -6.600000e+04 out of expressed type range}}
+!qalias = !quant.uniform<i8:f16:1, {-2.0,-6.6e4}>
 
 // -----
 // Illegal negative axis in sub-channel quantization
@@ -233,7 +228,7 @@
 // Scale out of expressed type range in sub-channel quantization
 // expected-error@+2 {{scale 6.600000e+04 out of expressed type range}}
 !qalias = !quant.uniform<i8:f16:{0:1,1:2},
-    {{6.6e4:120,9.987200e-01:127}, {2.000000e+02:256,9.987200e-01}}>
+    {{6.6e4:120,9.987200e-01:127}, {2.000000e+02:255,9.987200e-01}}>
 
 // -----
 // Illegal storage min/max: max > defaultMax
