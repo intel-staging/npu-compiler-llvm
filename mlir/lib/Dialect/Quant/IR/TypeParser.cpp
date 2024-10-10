@@ -233,16 +233,12 @@ static Type parseAnyType(DialectAsmParser &parser) {
 /// type. The `expressedType` argument is the floating-point type used for
 /// expressing the quantized values, and `scale` is the double value to check.
 LogicalResult
-isScaleInExpressedTypeRange(function_ref<InFlightDiagnostic()> emitError,
-                            Type expressedType, double scale) {
-  auto floatType = cast<FloatType>(expressedType);
-  double minScale =
-      APFloat::getSmallest(floatType.getFloatSemantics()).convertToDouble();
-  double maxScale =
-      APFloat::getLargest(floatType.getFloatSemantics()).convertToDouble();
-  if (scale < minScale || scale > maxScale)
-    return emitError() << "scale " << scale << " out of expressed type range ["
-                       << minScale << ", " << maxScale << "]";
+isScaleInExpressedTypeRange(function_ref<InFlightDiagnostic()> emitError, Type,
+                            double scale) {
+  // Only reject NaN/Inf now.
+  if (std::isnan(scale) || std::isinf(scale)) {
+    return emitError() << "illegal scale: " << scale;
+  }
   return success();
 }
 
