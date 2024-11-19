@@ -726,10 +726,10 @@ static void printStorageType(QuantizedType type, DialectAsmPrinter &out) {
 static void printQuantileType(Type quantileType, DialectAsmPrinter &out) {
   if (auto intType = llvm::dyn_cast<IntegerType>(quantileType)) {
     const unsigned storageTypeWidth = intType.getWidth();
-    if (intType.isSigned()) {
-      out << ":i" << storageTypeWidth;
-    } else {
+    if (intType.isUnsigned()) {
       out << ":u" << storageTypeWidth;
+    } else {
+      out << ":i" << storageTypeWidth;
     }
   } else if (mlir::isa<Float8E5M2Type>(quantileType)) {
     out << ":f8E5M2";
@@ -956,12 +956,3 @@ void QuantDialect::printType(Type type, DialectAsmPrinter &os) const {
   else
     llvm_unreachable("Unhandled quantized type");
 }
-/*
-  else if (auto uniformType = llvm::dyn_cast<UniformQuantizedType>(type))
-    printUniformQuantizedType(uniformType, os);
-  else if (auto perAxisType = llvm::dyn_cast<UniformQuantizedPerAxisType>(type))
-    printUniformQuantizedPerAxisType(perAxisType, os);
-  else if (auto perAxisType =
-               llvm::dyn_cast<UniformQuantizedSubChannelType>(type))
-    printUniformQuantizedSubChannelType(perAxisType, os);
-*/
