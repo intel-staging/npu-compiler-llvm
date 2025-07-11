@@ -405,40 +405,6 @@ def TestCustomLocationAttr : Test_LocAttr<"TestCustomLocation"> {
   let assemblyFormat = "`<` $file `*` $line `>`";
 }
 
-// Test OpAsmAttrInterface.
-def TestOpAsmAttrInterfaceAttr : Test_Attr<"TestOpAsmAttrInterface",
-    [DeclareAttrInterfaceMethods<OpAsmAttrInterface, ["getAlias"]>]> {
-  let mnemonic = "op_asm_attr_interface";
-  let parameters = (ins "mlir::StringAttr":$value);
-  let assemblyFormat = [{
-    `<` struct(params) `>`
-  }];
-}
-
-// Test OpAsmAttrInterface from tablegen genMnemonicAlias option.
-def TestOpAsmAttrInterfaceTablegenDefaultAttr : Test_Attr<"TestOpAsmAttrInterfaceTablegenDefault"> {
-  let mnemonic = "op_asm_attr_interface_tablegen_default";
-  let parameters = (ins "mlir::StringAttr":$value);
-  let assemblyFormat = [{
-    `<` struct(params) `>`
-  }];
-
-  let genMnemonicAlias = 1;
-}
-
-// Test attribute containing a slash token
-def SlashAttr: Test_Attr<"Slash">{
-  let mnemonic = "slash_attr";
-
-  let parameters = (
-    ins
-    "int":$lhs,
-    "int":$rhs
-  );
-
-  let hasCustomAssemblyFormat = 1;
-}
-
 def TestCustomStorageCtorAttr : Test_Attr<"TestCustomStorageCtorAttr"> {
     let mnemonic = "custom_storage_ctor_attr";
     let parameters = (ins "int":$value);

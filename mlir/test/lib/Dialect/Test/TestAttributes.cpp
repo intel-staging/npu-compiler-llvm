@@ -330,7 +330,7 @@ static ParseResult parseCustomFloatAttr(AsmParser &p, StringAttr &typeStrAttr,
 //===----------------------------------------------------------------------===//
 
 Attribute TestAttrNewlineAndIndentAttr::parse(::mlir::AsmParser &parser,
-                                           ::mlir::Type type) {
+                                              ::mlir::Type type) {
   Type indentType;
   if (parser.parseLess()) {
     return {};
@@ -533,24 +533,6 @@ getDynamicCustomAssemblyFormatAttr(TestDialect *testDialect) {
   return DynamicAttrDefinition::get("dynamic_custom_assembly_format",
                                     testDialect, std::move(verifier),
                                     std::move(parser), std::move(printer));
-}
-
-//===----------------------------------------------------------------------===//
-// SlashAttr
-//===----------------------------------------------------------------------===//
-
-Attribute SlashAttr::parse(AsmParser &parser, Type type) {
-  int lhs, rhs;
-
-  if (parser.parseLess() || parser.parseInteger(lhs) || parser.parseSlash() ||
-      parser.parseInteger(rhs) || parser.parseGreater())
-    return Attribute();
-
-  return SlashAttr::get(parser.getContext(), lhs, rhs);
-}
-
-void SlashAttr::print(AsmPrinter &printer) const {
-  printer << "<" << getLhs() << " / " << getRhs() << ">";
 }
 
 //===----------------------------------------------------------------------===//
