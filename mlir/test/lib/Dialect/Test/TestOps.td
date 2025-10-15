@@ -33,6 +33,7 @@ include "mlir/Interfaces/MemorySlotInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ValueBoundsOpInterface.td"
 include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.td"
+include "mlir/Dialect/Bufferization/IR/BufferizationTypeInterfaces.td"
 
 // Include the attribute definitions.
 include "TestAttrDefs.td"
@@ -2280,7 +2281,7 @@ def SideEffectWithRegionOp : TEST_Op<"side_effect_with_region_op",
 }
 
 //===----------------------------------------------------------------------===//
-// Test CopyOpInterface
+// Copy Operation Test
 //===----------------------------------------------------------------------===//
 
 def CopyOp : TEST_Op<"copy", [CopyOpInterface]> {
@@ -3621,10 +3622,10 @@ def TestDummyTensorOp : TEST_Op<"dummy_tensor_op",
         ["bufferize", "bufferizesToMemoryRead",
          "bufferizesToMemoryWrite", "getAliasingValues"]>]> {
   let arguments = (ins
-    Arg<TestTensorType>:$input
+    Arg<Bufferization_TensorLikeTypeInterface>:$input
   );
   let results = (outs
-    Arg<TestTensorType>:$output
+    Arg<Bufferization_TensorLikeTypeInterface>:$output
   );
 
   let extraClassDefinition = [{
@@ -3646,10 +3647,10 @@ def TestDummyTensorOp : TEST_Op<"dummy_tensor_op",
 
 def TestDummyMemrefOp : TEST_Op<"dummy_memref_op", []> {
   let arguments = (ins
-    Arg<TestMemrefType>:$input
+    Arg<Bufferization_BufferLikeTypeInterface>:$input
   );
   let results = (outs
-    Arg<TestMemrefType>:$output
+    Arg<Bufferization_BufferLikeTypeInterface>:$output
   );
 }
 
@@ -3659,7 +3660,7 @@ def TestCreateTensorOp : TEST_Op<"create_tensor_op",
          "bufferizesToMemoryWrite", "getAliasingValues",
          "bufferizesToAllocation"]>]> {
   let arguments = (ins);
-  let results = (outs Arg<TestTensorType>:$output);
+  let results = (outs Arg<Bufferization_TensorLikeTypeInterface>:$output);
   let extraClassDefinition = [{
     bool test::TestCreateTensorOp::bufferizesToMemoryRead(::mlir::OpOperand&,
         const ::mlir::bufferization::AnalysisState&) {
@@ -3683,7 +3684,7 @@ def TestCreateTensorOp : TEST_Op<"create_tensor_op",
 
 def TestCreateMemrefOp : TEST_Op<"create_memref_op"> {
   let arguments = (ins);
-  let results = (outs Arg<TestMemrefType>:$output);
+  let results = (outs Arg<Bufferization_BufferLikeTypeInterface>:$output);
 }
 
 //===----------------------------------------------------------------------===//
