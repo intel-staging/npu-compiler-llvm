@@ -82,7 +82,7 @@ struct CastOpInterface
     auto rankedResultType = cast<RankedTensorType>(castOp.getType());
     return cast<BufferLikeType>(MemRefType::get(
         rankedResultType.getShape(), rankedResultType.getElementType(),
-        llvm::cast<MemRefType>(*maybeSrcBufferType).getLayout(), memorySpace));
+        llvm::cast<MemRefType>(*maybeSrcBufferType).getLayout(), memorySpace);
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
