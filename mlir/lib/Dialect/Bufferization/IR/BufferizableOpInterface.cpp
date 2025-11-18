@@ -683,16 +683,6 @@ bool AnalysisState::hasUndefinedContents(OpOperand *opOperand) const {
   return false;
 }
 
-// bufferization.to_buffer is not allowed to change the rank.
-static void ensureToBufferOpIsValid(Value tensor, Type memrefType) {
-#ifndef NDEBUG
-  auto rankedTensorType = llvm::dyn_cast<RankedTensorType>(tensor.getType());
-  assert((!rankedTensorType || llvm::cast<MemRefType>(memrefType).getRank() ==
-                                   rankedTensorType.getRank()) &&
-         "to_buffer would be invalid: mismatching ranks");
-#endif
-}
-
 FailureOr<Value> bufferization::getBuffer(RewriterBase &rewriter, Value value,
                                           const BufferizationOptions &options,
                                           const BufferizationState &state) {
@@ -711,7 +701,7 @@ FailureOr<Value> bufferization::getBuffer(RewriterBase &rewriter, Value value,
   FailureOr<BufferLikeType> bufferType = getBufferType(value, options, state);
   if (failed(bufferType))
     return failure();
-  ensureToBufferOpIsValid(value, *bufferType);
+
   return rewriter
       .create<bufferization::ToBufferOp>(value.getLoc(), *bufferType, value)
       .getResult();
