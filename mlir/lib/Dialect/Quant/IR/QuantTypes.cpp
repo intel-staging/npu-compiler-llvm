@@ -51,7 +51,7 @@ QuantizedType::verifyInvariants(function_ref<InFlightDiagnostic()> emitError,
       (flags & QuantizationFlags::Signed) == QuantizationFlags::Signed;
 
   // Integral storage type width checks
-  if (storageType.isa<IntegerType>()) {
+  if (mlir::isa<IntegerType>(storageType)) {
     unsigned integralWidth =
         llvm::dyn_cast<IntegerType>(storageType).getWidth();
 
@@ -60,7 +60,7 @@ QuantizedType::verifyInvariants(function_ref<InFlightDiagnostic()> emitError,
   }
 
   int64_t defaultMin, defaultMax;
-  if (storageType.isa<IntegerType>()) {
+  if (mlir::isa<IntegerType>(storageType)) {
     const auto width = llvm::dyn_cast<IntegerType>(storageType).getWidth();
     defaultMin = QuantizedType::getDefaultMinimumForInteger(isSigned, width);
     defaultMax = QuantizedType::getDefaultMaximumForInteger(isSigned, width);
@@ -74,8 +74,9 @@ QuantizedType::verifyInvariants(function_ref<InFlightDiagnostic()> emitError,
     defaultMin = QuantizedType::getDefaultMinimumForF4E2M1FN();
     defaultMax = QuantizedType::getDefaultMaximumForF4E2M1FN();
   } else {
-    return emitError() << "illegal storage type, supported types are: integral "
-                          "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
+    return emitError()
+           << "illegal storage type, supported types are: integral "
+              "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
   }
 
   // Verify storageTypeMin and storageTypeMax.
@@ -572,20 +573,25 @@ LogicalResult QuantileQuantizedType::verifyInvariants(
   }
 
   unsigned typeWidth{};
-  if (storageType.isa<IntegerType>()) {
+  if (mlir::isa<IntegerType>(storageType)) {
     typeWidth = llvm::dyn_cast<IntegerType>(storageType).getWidth();
-  } else if (mlir::isa<Float8E5M2Type, Float8E4M3FNType, Float4E2M1FNType>(storageType)) {
-    // Float8E5M2Type, Float8E4M3FNType and Float4E2M1FNType derive from FloatType.
+  } else if (mlir::isa<Float8E5M2Type, Float8E4M3FNType, Float4E2M1FNType>(
+                 storageType)) {
+    // Float8E5M2Type, Float8E4M3FNType and Float4E2M1FNType derive from
+    // FloatType.
     typeWidth = llvm::dyn_cast<FloatType>(storageType).getWidth();
   } else {
-    return emitError() << "illegal storage type, supported types are: integral "
-                          "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
+    return emitError()
+           << "illegal storage type, supported types are: integral "
+              "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
   }
 
   const size_t storageTypeRange = storageTypeMax - storageTypeMin + 1;
   const size_t typeWidthSize = 1 << typeWidth;
   const size_t expectedSize =
-      (storageTypeRange < typeWidthSize) && !mlir::isa<FloatType>(storageType) ? storageTypeRange : typeWidthSize;
+      (storageTypeRange < typeWidthSize) && !mlir::isa<FloatType>(storageType)
+          ? storageTypeRange
+          : typeWidthSize;
 
   const auto quantileArraySize = quantiles.size();
   if (quantileArraySize != expectedSize) {
@@ -657,20 +663,25 @@ LogicalResult QuantileQuantizedPerAxisType::verifyInvariants(
   }
 
   unsigned typeWidth{};
-  if (storageType.isa<IntegerType>()) {
+  if (mlir::isa<IntegerType>(storageType)) {
     typeWidth = llvm::dyn_cast<IntegerType>(storageType).getWidth();
-  } else if (mlir::isa<Float8E5M2Type, Float8E4M3FNType, Float4E2M1FNType>(storageType)) {
-    // Float8E5M2Type, Float8E4M3FNType and Float4E2M1FNType derive from FloatType.
+  } else if (mlir::isa<Float8E5M2Type, Float8E4M3FNType, Float4E2M1FNType>(
+                 storageType)) {
+    // Float8E5M2Type, Float8E4M3FNType and Float4E2M1FNType derive from
+    // FloatType.
     typeWidth = llvm::dyn_cast<FloatType>(storageType).getWidth();
   } else {
-    return emitError() << "illegal storage type, supported types are: integral "
-                          "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
+    return emitError()
+           << "illegal storage type, supported types are: integral "
+              "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
   }
 
   const size_t storageTypeRange = storageTypeMax - storageTypeMin + 1;
   const size_t typeWidthSize = 1 << typeWidth;
   const size_t expectedSize =
-      (storageTypeRange < typeWidthSize) && !mlir::isa<FloatType>(storageType) ? storageTypeRange : typeWidthSize;
+      (storageTypeRange < typeWidthSize) && !mlir::isa<FloatType>(storageType)
+          ? storageTypeRange
+          : typeWidthSize;
 
   const auto quantileArraySize = quantiles.size();
   if (quantileArraySize != expectedSize) {

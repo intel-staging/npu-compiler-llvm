@@ -564,8 +564,9 @@ LogicalResult mlir::inlineCall(
   auto [inlineBlock, inlinePoint] = callInterface->getInlineBlockAndPoint(call);
 
   // Attempt to inline the call.
-  if (failed(inlineRegionImpl(interface, src, inlineBlock, inlinePoint, mapper,
-                              callResults, callableResultTypes, call.getLoc(),
+  if (failed(inlineRegionImpl(interface, cloneCallback, src, inlineBlock,
+                              inlinePoint, mapper, callResults,
+                              callableResultTypes, call.getLoc(),
                               shouldCloneInlinedRegion, call)))
     return cleanupState();
   return success();
