@@ -201,9 +201,9 @@ public:
   convertSourceOp(IndexSwitchOp op, OneToNOpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter,
                   TypeRange dstTypes) const {
-    auto newOp =
-        IndexSwitchOp::create(rewriter, op.getLoc(), dstTypes, op.getArg(),
-                              op.getCases(), op.getNumCases());
+    auto newOp = rewriter.create<IndexSwitchOp>(
+        op.getLoc(), dstTypes, getSingleValue(adaptor.getArg()), op.getCases(),
+        op.getNumCases());
 
     for (unsigned i = 0u; i < op.getNumRegions(); i++) {
       auto &dstRegion = newOp.getRegion(i);
@@ -249,14 +249,14 @@ void mlir::scf::populateSCFStructuralTypeConversions(
     const TypeConverter &typeConverter, RewritePatternSet &patterns) {
   patterns.add<ConvertForOpTypes, ConvertIfOpTypes, ConvertYieldOpTypes,
                ConvertWhileOpTypes, ConvertConditionOpTypes,
-               ConvertIndexSwitchOpTypes>(typeConverter, patterns.getContext(),
-                                          benefit);
+               ConvertIndexSwitchOpTypes>(typeConverter, patterns.getContext());
 }
 
 void mlir::scf::populateSCFStructuralTypeConversionTarget(
     const TypeConverter &typeConverter, ConversionTarget &target) {
-  target.addDynamicallyLegalOp<ForOp, IfOp, IndexSwitchOp>(
-      [&](Operation *op) { return typeConverter.isLegal(op->getResults()); });
+  target.addDynamicallyLegalOp<ForOp, IfOp, IndexSwitchOp>([&](Operation *op) {
+    return typeConverter.isLegal(op->getResultTypes());
+  });
   target.addDynamicallyLegalOp<scf::YieldOp>([&](scf::YieldOp op) {
     // We only have conversions for a subset of ops that use scf.yield
     // terminators.
