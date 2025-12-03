@@ -1,0 +1,29 @@
+name: Sync fork
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch:
+          - main
+          - release/20.x
+          - release/21.x
+    steps:
+      - name: Sync ${{ matrix.branch }} from upstream via gh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_REPO_SYNC_TOKEN }}
+        run: |
+          gh repo sync ${{ github.repository }} --branch "${{ matrix.branch }}"

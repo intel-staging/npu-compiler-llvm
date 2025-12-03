@@ -6,7 +6,7 @@ permissions:
 on:
   pull_request:
     branches:
-      - main
+      - npu/main
     paths:
       - '.github/**'
   schedule:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   codeql:
     name: 'Github Actions CodeQL'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
     steps:

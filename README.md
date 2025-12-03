@@ -1,3 +1,31 @@
+# OpenVINO™ Intel® NPU Compiler – LLVM Fork Notice
+
+[![npu/release/20.x](https://img.shields.io/badge/Active_release_branch-npu/release/20.x-blue)](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/20.x)
+[![pr/npu/release/20.x](https://img.shields.io/badge/Open_a_PR_to-npu/release/20.x-blue)](https://github.com/intel-staging/npu-compiler-llvm/compare/npu/release/20.x..?)
+
+
+[![npu/release/21.x](https://img.shields.io/badge/Future_release_branch-npu/release/21.x-yellow)](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/21.x)
+[![pr/npu/release/21.x](https://img.shields.io/badge/Open_a_PR_to-npu/release/21.x-yellow)](https://github.com/intel-staging/npu-compiler-llvm/compare/npu/release/21.x..?)
+
+
+This repository is a fork of [llvm/llvm-project](https://github.com/llvm/llvm-project ).
+It is designed to provide the core functionality of LLVM and MLIR projects, along with a set of NPU Compiler-specific patches. These modifications serve as the baseline for the [OpenVINO™ Intel® NPU Compiler](https://github.com/openvinotoolkit/npu_compiler).
+
+## Branching strategy
+
+The default branch of this repository is [npu/main](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/main), which is used for infrastructure purposes only.
+The NPU Compiler project is based on official LLVM releases. To contribute to the NPU-specific version of LLVM, please open a Pull Request to one of the following branches:
+
+* [npu/release/20.x](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/20.x) - Contribute to the current active baseline for the NPU Compiler LLVM dependency.
+* [npu/release/21.x](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/21.x) - Contribute to the future LLVM baseline, which will be integrated into the NPU Compiler in the coming weeks or months.
+
+## Security Policy
+
+Intel® Corporation is committed to addressing security vulnerabilities quickly and transparently. To report a potential security issue in this project, please refer to our
+[Security Policy](./SECURITY.md).
+
+---
+
 # The LLVM Compiler Infrastructure
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)

@@ -6,21 +6,15 @@ permissions:
 on:
   pull_request:
     branches:
-      - main
-      - 'users/**'
-    paths:
-      - 'clang-tools-extra/clang-tidy/**'
-      - '.github/workflows/pr-code-lint.yml'
+      - npu/main
+      - npu/release/**
 
 jobs:
   code_linter:
-    if: github.repository_owner == 'llvm'
     runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
-    container:
-      image: 'ghcr.io/llvm/ci-ubuntu-24.04-lint'
     timeout-minutes: 60
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
