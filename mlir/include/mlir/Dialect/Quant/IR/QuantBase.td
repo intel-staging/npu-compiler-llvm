@@ -401,6 +401,34 @@ class quant_ScalarOrTensorOf<Type etype> :
 
 def quant_QuantizedType :
     Type<CPred<"::llvm::isa<mlir::quant::QuantizedType>($_self)">, "quantized type">;
+    
+def quant_QuantileQuantizedType :
+    DialectType<Quant_Dialect,
+                CPred<"::llvm::isa<mlir::quant::QuantileQuantizedType>($_self)">,
+                "QuantileQuantizedType">;
+
+def quant_QuantileQuantizedValueType :
+    quant_ScalarOrTensorOf<quant_QuantileQuantizedType>;
+
+// UniformQuantizedPerAxisType
+def quant_UniformQuantizedPerAxisType :
+    DialectType<Quant_Dialect,
+    CPred<"::llvm::isa<::mlir::quant::UniformQuantizedPerAxisType>($_self)">,
+    "UniformQuantizedPerAxisType">;
+
+// QuantileQuantizedPerAxisType
+def quant_QuantileQuantizedPerAxisType :
+    DialectType<Quant_Dialect,
+    CPred<"::llvm::isa<::mlir::quant::QuantileQuantizedPerAxisType>($_self)">,
+    "QuantileQuantizedPerAxisType">;
+
+// Predicate for detecting a container or primitive of UniformQuantizedPerAxisType.
+def quant_UniformQuantizedPerAxisValueType :
+    quant_ScalarOrTensorOf<quant_UniformQuantizedPerAxisType>;
+
+// Predicate for detecting a container or primitive of QuantileQuantizedPerAxisType.
+def quant_QuantileQuantizedPerAxisValueType :
+    quant_ScalarOrTensorOf<quant_QuantileQuantizedPerAxisType>;
 
 def quant_ScalarType :
     Type<Or<[

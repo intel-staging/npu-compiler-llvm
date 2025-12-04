@@ -94,6 +94,37 @@ def UniformQuantizedSubChannelType
         zeroPoints, llvm::to_vector(llvm::map_range(quantizedDimensions,
         [](int64_t dim) { return static_cast<int32_t>(dim);})), blockSizes,
         storageTypeMin, storageTypeMax)
+          }];
+}
+
+def QuantileQuantizedType: DialectType<(type
+  VarInt:$flags,
+  Type:$storageType,
+  Type:$quantileType,
+  Type:$expressedType,
+  Array<DoubleAPFloatList>:$quantiles,
+  DoubleAPFloat:$scale,
+  SignedVarInt:$zeroPoint,
+  SignedVarInt:$storageTypeMin,
+  SignedVarInt:$storageTypeMax
+)>;
+
+def QuantileQuantizedPerAxisType: DialectType<(type
+  VarInt:$flags,
+  Type:$storageType,
+  Type:$quantileType,
+  Type:$expressedType,
+  VarInt:$quantizedDimension,
+  SignedVarInt:$storageTypeMin,
+  SignedVarInt:$storageTypeMax,
+  Array<DoubleAPFloatList>:$quantiles,
+  Array<DoubleAPFloatList>:$scales,
+  Array<SignedVarIntList>:$zeroPoints
+)> {
+  // Note: builder order differs from bytecode.
+  let cBuilder = [{
+      get<$_resultType>(context, flags, storageType, quantileType, expressedType, quantiles, scales,
+        zeroPoints, quantizedDimension, storageTypeMin, storageTypeMax)
   }];
 }
 
@@ -103,10 +134,17 @@ def UniformQuantizedSubChannelType
 /// compatibility with older bytecode.
 
 def QuantDialectTypes : DialectTypes<"Quant"> {
-  let elems = [ReservedOrDead, AnyQuantizedType,
-               AnyQuantizedTypeWithExpressedType, CalibratedQuantizedType,
-               UniformQuantizedType, UniformQuantizedPerAxisType,
-               UniformQuantizedSubChannelType];
+  let elems = [
+    ReservedOrDead,
+    AnyQuantizedType,
+    AnyQuantizedTypeWithExpressedType,
+    CalibratedQuantizedType,
+    UniformQuantizedType,
+    UniformQuantizedPerAxisType,
+    QuantileQuantizedType,
+    QuantileQuantizedPerAxisType,
+    UniformQuantizedSubChannelType
+  ];
 }
 
 #endif // QUANT_BYTECODE

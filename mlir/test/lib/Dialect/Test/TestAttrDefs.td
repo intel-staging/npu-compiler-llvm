@@ -347,6 +347,7 @@ def TestCopyCount : Test_Attr<"TestCopyCount"> {
   let mnemonic = "copy_count";
   let parameters = (ins TestParamCopyCount:$copy_count);
   let assemblyFormat = "`<` $copy_count `>`";
+  let genVerifyDecl = 1;
 }
 
 def TestConditionalAliasAttr : Test_Attr<"TestConditionalAlias"> {
@@ -385,6 +386,12 @@ def TestConstMemorySpaceAttr : Test_Attr<"TestConstMemorySpace", [
   let mnemonic = "const_memory_space";
   let parameters = (ins DefaultValuedParameter<"unsigned", "0">:$addressSpace);
   let assemblyFormat = "(`<` $addressSpace^ `>`)?";
+}
+
+def TestAttrNewlineAndIndent : Test_Attr<"TestAttrNewlineAndIndent"> {
+  let mnemonic = "newline_and_indent";
+  let parameters = (ins "::mlir::Type":$indentType);
+  let hasCustomAssemblyFormat = 1;
 }
 
 // Test custom location handling.
