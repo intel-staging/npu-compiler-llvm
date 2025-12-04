@@ -6,17 +6,18 @@ permissions:
 on:
   pull_request:
     branches:
-      - main
-      - 'users/**'
+      - npu/main
+      - npu/release/20.x
+      - npu/release/21.x
+
 
 jobs:
   code_formatter:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    if: github.repository == 'llvm/llvm-project'
     steps:
       - name: Fetch LLVM sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
