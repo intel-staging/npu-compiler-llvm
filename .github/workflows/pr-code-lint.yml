@@ -7,7 +7,8 @@ on:
   pull_request:
     branches:
       - npu/main
-      - npu/release/**
+      - npu/release/20.x
+      - npu/release/21.x
 
 jobs:
   code_linter:

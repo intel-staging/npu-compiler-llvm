@@ -7,11 +7,13 @@ on:
   push:
     branches:
       - npu/main
-      - npu/release/**
+      - npu/release/20.x
+      - npu/release/21.x
   pull_request:
     branches:
       - npu/main
-      - npu/release/**
+      - npu/release/20.x
+      - npu/release/21.x
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
