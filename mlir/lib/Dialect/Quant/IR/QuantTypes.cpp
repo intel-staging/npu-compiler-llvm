@@ -9,6 +9,7 @@
 #include "mlir/Dialect/Quant/IR/QuantTypes.h"
 #include "TypeDetail.h"
 #include "mlir/Dialect/Quant/IR/Quant.h"
+#include "mlir/IR/QuantStorageTypeInterface.h"
 
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
@@ -47,46 +48,28 @@ QuantizedType::verifyInvariants(function_ref<InFlightDiagnostic()> emitError,
                                 unsigned flags, Type storageType,
                                 Type expressedType, int64_t storageTypeMin,
                                 int64_t storageTypeMax) {
+  if (auto quantStorageTypeInterface =
+          llvm::dyn_cast<QuantStorageTypeInterface>(storageType)) {
+    unsigned integralWidth = quantStorageTypeInterface.getStorageWidth();
 
-  bool isSigned =
-      (flags & QuantizationFlags::Signed) == QuantizationFlags::Signed;
-
-  // Integral storage type width checks
-  if (mlir::isa<IntegerType>(storageType)) {
-    unsigned integralWidth =
-        llvm::dyn_cast<IntegerType>(storageType).getWidth();
-
+    // Verify storage width.
     if (integralWidth == 0 || integralWidth > MaxStorageBits)
       return emitError() << "illegal storage type size: " << integralWidth;
+
+    bool isSigned = flags & QuantizationFlags::Signed;
+    int64_t defaultMin = quantStorageTypeInterface.getDefaultMinimum(isSigned);
+    int64_t defaultMax = quantStorageTypeInterface.getDefaultMaximum(isSigned);
+
+    if (storageTypeMax - storageTypeMin <= 0 || storageTypeMin < defaultMin ||
+        storageTypeMax > defaultMax) {
+      return emitError() << "illegal storage min and storage max: ("
+                         << storageTypeMin << ":" << storageTypeMax << ")";
+    }
+
+    return success();
   }
 
-  int64_t defaultMin, defaultMax;
-  if (mlir::isa<IntegerType>(storageType)) {
-    const auto width = llvm::dyn_cast<IntegerType>(storageType).getWidth();
-    defaultMin = QuantizedType::getDefaultMinimumForInteger(isSigned, width);
-    defaultMax = QuantizedType::getDefaultMaximumForInteger(isSigned, width);
-  } else if (mlir::isa<Float8E5M2Type>(storageType)) {
-    defaultMin = QuantizedType::getDefaultMinimumForF8E5M2();
-    defaultMax = QuantizedType::getDefaultMaximumForF8E5M2();
-  } else if (mlir::isa<Float8E4M3FNType>(storageType)) {
-    defaultMin = QuantizedType::getDefaultMinimumForF8E4M3FN();
-    defaultMax = QuantizedType::getDefaultMaximumForF8E4M3FN();
-  } else if (mlir::isa<Float4E2M1FNType>(storageType)) {
-    defaultMin = QuantizedType::getDefaultMinimumForF4E2M1FN();
-    defaultMax = QuantizedType::getDefaultMaximumForF4E2M1FN();
-  } else {
-    return emitError()
-           << "illegal storage type, supported types are: integral "
-              "types, Float8E4M3FNType, Float8E5M2Type and Float4E2M1FNType ";
-  }
-
-  // Verify storageTypeMin and storageTypeMax.
-  if (storageTypeMax - storageTypeMin <= 0 || storageTypeMin < defaultMin ||
-      storageTypeMax > defaultMax) {
-    return emitError() << "illegal storage min and storage max: ("
-                       << storageTypeMin << ":" << storageTypeMax << ")";
-  }
-  return success();
+  return emitError() << "storage type must implement QuantStorageTypeInterface";
 }
 
 Type QuantizedType::getStorageType() const {
@@ -102,20 +85,22 @@ int64_t QuantizedType::getStorageTypeMax() const {
 }
 
 bool QuantizedType::hasStorageTypeBounds() const {
-  unsigned int integralWidth = getStorageTypeIntegralWidth();
-  bool isSignedInteger = isSigned();
-  int64_t defaultIntegerMin =
-      getDefaultMinimumForInteger(isSignedInteger, integralWidth);
-  int64_t defaultIntegerMax =
-      getDefaultMaximumForInteger(isSignedInteger, integralWidth);
-  return defaultIntegerMin != getStorageTypeMin() ||
-         defaultIntegerMax != getStorageTypeMax();
+  Type storageType = static_cast<ImplType *>(impl)->storageType;
+  auto quantStorageTypeInterface =
+      llvm::dyn_cast<QuantStorageTypeInterface>(storageType);
+
+  int64_t defaultMin = quantStorageTypeInterface.getDefaultMinimum(isSigned());
+  int64_t defaultMax = quantStorageTypeInterface.getDefaultMaximum(isSigned());
+
+  return defaultMin != getStorageTypeMin() || defaultMax != getStorageTypeMax();
 }
 
 unsigned QuantizedType::getStorageTypeIntegralWidth() const {
-  // NOTE: If ever supporting non-integral storage types, some other scheme
-  // for determining the width will be needed.
-  return static_cast<ImplType *>(impl)->storageType.getIntOrFloatBitWidth();
+  Type storageType = static_cast<ImplType *>(impl)->storageType;
+  auto quantStorageTypeInterface =
+      llvm::dyn_cast<QuantStorageTypeInterface>(storageType);
+
+  return quantStorageTypeInterface.getStorageWidth();
 }
 
 Type QuantizedType::getExpressedType() const {

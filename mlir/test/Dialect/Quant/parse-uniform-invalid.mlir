@@ -37,12 +37,12 @@
 
 // -----
 // Unrecognized storage type: illegal prefix
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.uniform<int8<-4:3>:f32, 0.99872:127>
 
 // -----
 // Unrecognized storage type: no width
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.uniform<i<-4:3>:f32, 0.99872:127>
 
 // -----
@@ -52,7 +52,7 @@
 
 // -----
 // Unrecognized storage type: storage size < 0
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.uniform<i-1<-4:3>:f32, 0.99872:127>
 
 // -----

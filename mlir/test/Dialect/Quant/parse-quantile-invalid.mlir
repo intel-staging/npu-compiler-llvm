@@ -63,12 +63,12 @@ func.func @parse() -> !qalias {
 
 // -----
 // Unrecognized storage type: illegal prefix
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.quantile<int8<-4:3>:f16:f32, {-1.0,1.0}:0.99872:127>
 
 // -----
 // Unrecognized storage type: no width
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.quantile<i<-4:3>:f16:f32, {-1.0,1.0}:0.99872:127>
 
 // -----
@@ -78,7 +78,7 @@ func.func @parse() -> !qalias {
 
 // -----
 // Unrecognized storage type: storage size < 0
-// expected-error@+1 {{illegal quantized storage type alias}}
+// expected-error@+1 {{illegal storage type prefix}}
 !qalias = !quant.quantile<i-1<-4:3>:f16:f32, {-1.0,1.0}:0.99872:127>
 
 // -----
