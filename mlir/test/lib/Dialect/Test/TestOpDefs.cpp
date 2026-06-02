@@ -1408,12 +1408,14 @@ TestMultiSlotAlloca::handleDestructuringComplete(
   if (mlir::failed(buffer))
     return failure();
 
-  const auto outType = getOutput().getType();
-  const auto bufferizedOutType = test::TestMemrefType::get(
-      getContext(), outType.getShape(), outType.getElementType(), nullptr);
+  const auto bufferizedOutType =
+      mlir::bufferization::getBufferType(getOutput(), options, state);
+  if (mlir::failed(bufferizedOutType))
+    return failure();
+
   // replace op with memref analogy
-  auto dummyMemrefOp = rewriter.create<test::TestDummyMemrefOp>(
-      getLoc(), bufferizedOutType, *buffer);
+  auto dummyMemrefOp = test::TestDummyMemrefOp::create(
+      rewriter, getLoc(), *bufferizedOutType, *buffer);
 
   mlir::bufferization::replaceOpWithBufferizedValues(rewriter, getOperation(),
                                                      dummyMemrefOp.getResult());
