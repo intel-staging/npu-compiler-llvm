@@ -260,3 +260,21 @@
 !qalias = !quant.uniform<i8:f16:{0:1,1:2},
     {{6.6e4:120,9.987200e-01:127}, {2.000000e+02:255,9.987200e-01}}>
 
+
+// -----
+
+// Invalid LUT size: 16 values but explicit range 6:10 has only 5 representable values.
+// expected-error@+1 {{quantile LUT size (16) must equal the number of representable storage values (5)}}
+!qalias = !quant.uniform<!quant.quantile<f4E2M1FN:f16, {-1.0000,-0.8667,-0.7333,-0.6000,-0.4667,-0.3333,-0.2000,-0.0667,0.0667,0.2000,0.3333,0.4667,0.6000,0.7333,0.8667,1.0000}, <6:10>>:f32, 0.99872:127>
+
+// -----
+
+// Quantile storage range: min must be strictly less than max.
+// expected-error@+1 {{storage min must be less than storage max}}
+!qalias = !quant.uniform<!quant.quantile<f4E2M1FN:f16,{-1.0000,-0.8667,-0.7333,-0.6000,-0.4667,-0.3333,-0.2000,-0.0667,0.0667,0.2000,0.3333,0.4667,0.6000,0.7333,0.8667,1.0000}, <5:3>>:f32, 0.99872:127>
+
+// -----
+
+// Quantile LUT size (3) does not match the 16 representable values of f4E2M1FN's default range.
+// expected-error@+1 {{quantile LUT size (3) must equal the number of representable storage values (16)}}
+!qalias = !quant.uniform<!quant.quantile<f4E2M1FN:f16, {-1.0,0.0,1.0}>:f32, 0.99872:127>
