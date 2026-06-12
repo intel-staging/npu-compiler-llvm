@@ -71,43 +71,6 @@ static Type parseStorageType(DialectAsmParser &parser, bool &isSigned) {
   return type;
 }
 
-static Type parseQuantileType(DialectAsmParser &parser) {
-  auto typeLoc = parser.getCurrentLocation();
-  Type type;
-
-  // Parse storage type (alpha_ident, integer_literal).
-  StringRef identifier;
-  unsigned storageTypeWidth = 0;
-  OptionalParseResult result = parser.parseOptionalType(type);
-  if (result.has_value()) {
-    if (!succeeded(*result))
-      return nullptr;
-
-    if (!mlir::isa<IntegerType>(type) && !mlir::isa<FloatType>(type)) {
-      parser.emitError(typeLoc, "illegal quantile type alias");
-      return nullptr;
-    }
-  } else if (succeeded(parser.parseKeyword(&identifier))) {
-    // Otherwise, this must be an unsigned integer (`u` integer-literal)
-    if (identifier.consume_front("u")) {
-      if (identifier.getAsInteger(10, storageTypeWidth)) {
-        parser.emitError(typeLoc, "expected quantile type width");
-        return nullptr;
-      }
-      constexpr bool isSigned = false;
-      type = parser.getBuilder().getIntegerType(storageTypeWidth, isSigned);
-
-    } else {
-      parser.emitError(typeLoc, "illegal quantile type alias");
-      return nullptr;
-    }
-  } else {
-    return nullptr;
-  }
-
-  return type;
-}
-
 static ParseResult
 checkStorageRange(DialectAsmParser &parser, int64_t storageTypeMin,
                   int64_t storageTypeMax, int64_t defaultStorageTypeMin,
@@ -358,7 +321,7 @@ parseQuantParamListUntilRBrace(DialectAsmParser &parser, Type expressedType,
   return success();
 }
 
-/// Parses a UniformQuantizedType or a QuantileQuantizedType.
+/// Parses a UniformQuantizedType
 ///
 ///   uniform_type ::= uniform_per_layer
 ///                  | uniform_per_axis
@@ -451,17 +414,6 @@ static Type parseUniformType(DialectAsmParser &parser, bool isQuantile) {
     return nullptr;
   }
 
-  // Quantile type.
-  if (isQuantile) {
-    if (parser.parseColon()) {
-      return nullptr;
-    }
-    quantileType = parseQuantileType(parser);
-    if (!quantileType) {
-      return nullptr;
-    }
-  }
-
   // Expressed type.
   if (parser.parseColon() || parser.parseType(expressedType)) {
     return nullptr;
@@ -490,28 +442,6 @@ static Type parseUniformType(DialectAsmParser &parser, bool isQuantile) {
     return nullptr;
   }
 
-  // Quantile list.
-  if (isQuantile) {
-    if (parser.parseLBrace()) {
-      return nullptr;
-    }
-
-    do {
-      quantiles.emplace_back();
-      if (parser.parseFloat(quantiles.back())) {
-        return nullptr;
-      }
-    } while (succeeded(parser.parseOptionalComma()));
-
-    if (parser.parseRBrace()) {
-      return nullptr;
-    }
-
-    if (parser.parseColon()) {
-      return nullptr;
-    }
-  }
-
   // Quantization parameter (scales/zeroPoints) specification.
   bool isPerTensor = !isPerAxis && !isSubChannel;
   SmallVector<int64_t> dims;
@@ -533,20 +463,6 @@ static Type parseUniformType(DialectAsmParser &parser, bool isQuantile) {
 
   if (parser.parseGreater()) {
     return nullptr;
-  }
-
-  if (isQuantile) {
-    if (isPerAxis) {
-      return parser.getChecked<QuantileQuantizedPerAxisType>(
-          typeFlags, storageType, quantileType, expressedType, quantiles,
-          scales, zeroPoints, quantizedDimensions[0], storageTypeMin,
-          storageTypeMax);
-    }
-
-    assert(!isSubChannel && "Sub-channel quantile types are not supported");
-    return parser.getChecked<QuantileQuantizedType>(
-        typeFlags, storageType, quantileType, expressedType, quantiles,
-        scales.front(), zeroPoints.front(), storageTypeMin, storageTypeMax);
   }
 
   if (isPerAxis) {
@@ -671,8 +587,6 @@ Type QuantDialect::parseType(DialectAsmParser &parser) const {
 
   if (typeNameSpelling == "uniform")
     return parseUniformType(parser, false);
-  if (typeNameSpelling == "quantile")
-    return parseUniformType(parser, true);
   if (typeNameSpelling == "any")
     return parseAnyType(parser);
   if (typeNameSpelling == "calibrated")
@@ -850,56 +764,6 @@ printUniformQuantizedSubChannelType(UniformQuantizedSubChannelType type,
   out << ">";
 }
 
-/// Helper that prints a QuantileQuantizedType.
-static void printQuantileQuantizedType(QuantileQuantizedType type,
-                                       DialectAsmPrinter &out) {
-  out << "quantile<";
-  printStorageType(type, out);
-  printQuantileType(type.getQuantileType(), out);
-  out << ":" << type.getExpressedType() << ", ";
-
-  // scheme specific parameters
-  ArrayRef<double> quantiles = type.getQuantiles();
-  out << "{";
-  llvm::interleave(
-      llvm::seq<size_t>(0, quantiles.size()), out,
-      [&](size_t index) { out << quantiles[index]; }, ",");
-  out << "}:";
-
-  printQuantParams(type.getScale(), type.getZeroPoint(), out);
-  out << ">";
-}
-
-/// Helper that prints a QuantileQuantizedPerAxisType.
-static void printQuantileQuantizedPerAxisType(QuantileQuantizedPerAxisType type,
-                                              DialectAsmPrinter &out) {
-  out << "quantile<";
-  printStorageType(type, out);
-  printQuantileType(type.getQuantileType(), out);
-  out << ":" << type.getExpressedType() << ":";
-  out << type.getQuantizedDimension();
-  out << ", ";
-
-  // scheme specific parameters
-  ArrayRef<double> quantiles = type.getQuantiles();
-  out << "{";
-  llvm::interleave(
-      llvm::seq<size_t>(0, quantiles.size()), out,
-      [&](size_t index) { out << quantiles[index]; }, ",");
-  out << "}:";
-
-  ArrayRef<double> scales = type.getScales();
-  ArrayRef<int64_t> zeroPoints = type.getZeroPoints();
-  out << "{";
-  llvm::interleave(
-      llvm::seq<size_t>(0, scales.size()), out,
-      [&](size_t index) {
-        printQuantParams(scales[index], zeroPoints[index], out);
-      },
-      ",");
-  out << "}>";
-}
-
 /// Helper that prints a CalibratedQuantizedType.
 static void printCalibratedQuantizedType(CalibratedQuantizedType type,
                                          DialectAsmPrinter &out) {
@@ -929,11 +793,6 @@ static void printQuantileType(QuantileType type, DialectAsmPrinter &out) {
 void QuantDialect::printType(Type type, DialectAsmPrinter &os) const {
   if (auto anyType = llvm::dyn_cast<AnyQuantizedType>(type))
     printAnyQuantizedType(anyType, os);
-  else if (auto uniformType = llvm::dyn_cast<QuantileQuantizedType>(type))
-    printQuantileQuantizedType(uniformType, os);
-  else if (auto perAxisType =
-               llvm::dyn_cast<QuantileQuantizedPerAxisType>(type))
-    printQuantileQuantizedPerAxisType(perAxisType, os);
   else if (auto uniformType = llvm::dyn_cast<UniformQuantizedType>(type))
     printUniformQuantizedType(uniformType, os);
   else if (auto perAxisType = llvm::dyn_cast<UniformQuantizedPerAxisType>(type))
