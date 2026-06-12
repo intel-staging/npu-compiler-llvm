@@ -23,6 +23,12 @@ def DoubleAPFloat:
   WithType   <"double">>>>;
 def DoubleAPFloatList : List<DoubleAPFloat>;
 
+def OptionalSignedVarInt:
+  WithParser <"succeeded(readOptionalSignedVarInt($_reader, $_var))",
+  WithBuilder<"$_args",
+  WithPrinter<"writeOptionalSignedVarInt($_writer, $_getter)",
+  WithType   <"std::optional<int64_t>">>>>;
+
 let cType = "AnyQuantizedType" in {
 
 def AnyQuantizedType: DialectType<(type
@@ -97,36 +103,13 @@ def UniformQuantizedSubChannelType
   }];
 }
 
-def QuantileQuantizedType: DialectType<(type
-  VarInt:$flags,
+def QuantileType : DialectType<(type
   Type:$storageType,
   Type:$quantileType,
-  Type:$expressedType,
   Array<DoubleAPFloatList>:$quantiles,
-  DoubleAPFloat:$scale,
-  SignedVarInt:$zeroPoint,
-  SignedVarInt:$storageTypeMin,
-  SignedVarInt:$storageTypeMax
+  OptionalSignedVarInt:$storageMin,
+  OptionalSignedVarInt:$storageMax
 )>;
-
-def QuantileQuantizedPerAxisType: DialectType<(type
-  VarInt:$flags,
-  Type:$storageType,
-  Type:$quantileType,
-  Type:$expressedType,
-  VarInt:$quantizedDimension,
-  SignedVarInt:$storageTypeMin,
-  SignedVarInt:$storageTypeMax,
-  Array<DoubleAPFloatList>:$quantiles,
-  Array<DoubleAPFloatList>:$scales,
-  Array<SignedVarIntList>:$zeroPoints
-)> {
-  // Note: builder order differs from bytecode.
-  let cBuilder = [{
-      get<$_resultType>(context, flags, storageType, quantileType, expressedType, quantiles, scales,
-        zeroPoints, quantizedDimension, storageTypeMin, storageTypeMax)
-  }];
-}
 
 /// This enum contains marker codes used to indicate which attribute is
 /// currently being decoded, and how it should be decoded. The order of these
@@ -137,8 +120,7 @@ def QuantDialectTypes : DialectTypes<"Quant"> {
   let elems = [ReservedOrDead, AnyQuantizedType,
                AnyQuantizedTypeWithExpressedType, CalibratedQuantizedType,
                UniformQuantizedType, UniformQuantizedPerAxisType,
-               UniformQuantizedSubChannelType,
-               QuantileQuantizedType, QuantileQuantizedPerAxisType];
+               UniformQuantizedSubChannelType, QuantileType];
 }
 
 #endif // QUANT_BYTECODE
