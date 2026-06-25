@@ -1,3 +1,33 @@
+# OpenVINO™ Intel® NPU Compiler – LLVM Fork Notice
+
+[![npu/release/20.x](https://img.shields.io/badge/Archive_release_branch-npu/release/20.x-lightgray)](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/20.x)
+[![pr/npu/release/20.x](https://img.shields.io/badge/Open_a_PR_to-npu/release/20.x-lightgray)](https://github.com/intel-staging/npu-compiler-llvm/compare/npu/release/20.x..?)
+
+[![npu/release/21.x](https://img.shields.io/badge/Active_release_branch-npu/release/21.x-blue)](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/21.x)
+[![pr/npu/release/21.x](https://img.shields.io/badge/Open_a_PR_to-npu/release/21.x-blue)](https://github.com/intel-staging/npu-compiler-llvm/compare/npu/release/21.x..?)
+
+[![npu/main](https://img.shields.io/badge/Active_experimental_branch-npu/main-yellow)](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/main)
+[![pr/npu/main](https://img.shields.io/badge/Open_a_PR_to-npu/main-yellow)](https://github.com/intel-staging/npu-compiler-llvm/compare/npu/main..?)
+
+This repository is a fork of [llvm/llvm-project](https://github.com/llvm/llvm-project).
+It is designed to provide the core functionality of LLVM and MLIR projects, along with a set of NPU Compiler-specific patches. These modifications serve as the baseline for the [OpenVINO™ Intel® NPU Compiler](https://github.com/openvinotoolkit/npu_compiler).
+
+## Branching strategy
+
+The default branch of this repository is [npu/main](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/main) that is forked from the `main` branch of [llvm/llvm-project](https://github.com/llvm/llvm-project) with some patches applied.
+The NPU Compiler releases are based on official LLVM releases with NPU-specific patches. To contribute to the NPU-specific version of LLVM, please open a Pull Request to one of the following branches:
+
+* [npu/release/20.x](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/20.x) - Archived.
+* [npu/release/21.x](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/release/21.x) - Contribute to the current active baseline for the NPU Compiler LLVM dependency.
+* [npu/main](https://github.com/intel-staging/npu-compiler-llvm/tree/npu/main) - Contribute to the current experimental baseline for the NPU Compiler LLVM dependency.
+
+## Security Policy
+
+Intel® Corporation is committed to addressing security vulnerabilities quickly and transparently. To report a potential security issue in this project, please refer to our
+[Security Policy](./SECURITY.md).
+
+---
+
 # The LLVM Compiler Infrastructure
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)
