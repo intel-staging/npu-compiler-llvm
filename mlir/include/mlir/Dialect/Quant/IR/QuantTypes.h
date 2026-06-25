@@ -26,9 +26,8 @@ struct AnyQuantizedTypeStorage;
 struct UniformQuantizedSubChannelTypeStorage;
 struct UniformQuantizedTypeStorage;
 struct UniformQuantizedPerAxisTypeStorage;
-struct QuantileQuantizedTypeStorage;
-struct QuantileQuantizedPerAxisTypeStorage;
 struct CalibratedQuantizedTypeStorage;
+struct QuantileTypeStorage;
 
 } // namespace detail
 
@@ -273,7 +272,7 @@ public:
 ///   Per-layer, optional parameters omitted:
 ///     !quant<uniform[StorageType]{Scale}>
 ///
-///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8'
+///   StorageType: 'i'|'u' NumBits, 'f4', 'F8E5M2', 'bf8', 'quantile'
 ///   ExpressedType: 'f16', 'f32', 'bf16', 'f64'
 ///   Scale: A legal double value
 ///   ZeroPoint: An integer value
@@ -333,7 +332,7 @@ public:
 ///   Per-axis, optional parameters omitted:
 ///     !quant<uniform[StorageType]{Scale}>
 ///
-///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8'
+///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8', 'quantile'
 ///   ExpressedType: 'f16', 'f32', 'bf16', 'f64'
 ///   QuantizedDim: An integer value
 ///   QuantParams: (Scale ':' ZeroPoint)+
@@ -407,153 +406,6 @@ public:
   }
 };
 
-// clang-format off
-/// QuantileQuantizedType derives from UniformQuantizedType and adds to it a
-/// look up table array of quantile values. The type of the data in the look up
-/// table is determined by the quantileType member: supported quantileType types
-/// are integer/unsigned/f4/hf8/bf8/f16/bf16/f32/f64.
-///
-/// Syntax synopsis:
-///   Per-layer, all parameters expressed:
-///     !quant<quantile[StorageType:QuantileType:ExpressedType]{Quantiles}:{Scale:ZeroPoint}>
-///   Per-layer, optional parameters omitted:
-///     !quant<quantile[StorageType:QuantileType]{Quantiles}:{Scale}>
-///
-///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8'
-///   QuantileType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8', 'f16', 'bf16', 'f32', 'f64'
-///   ExpressedType: 'f16', 'f32', 'bf16', 'f64'
-///   Quantiles: Quantile+
-///   Quantile: A legal double value
-///   Scale: A legal double value
-///   ZeroPoint: An integer value
-// clang-format on
-class QuantileQuantizedType
-    : public Type::TypeBase<QuantileQuantizedType, UniformQuantizedType,
-                            detail::QuantileQuantizedTypeStorage> {
-public:
-  using Base::Base;
-  using Base::getChecked;
-
-  static constexpr StringLiteral name = "quant.quantile";
-
-  /// Gets an instance of the type with all parameters specified but not
-  /// checked.
-  static QuantileQuantizedType get(unsigned flags, Type storageType,
-                                   Type quantileType, Type expressedType,
-                                   ArrayRef<double> quantiles, double scale,
-                                   int64_t zeroPoint, int64_t storageTypeMin,
-                                   int64_t storageTypeMax);
-
-  static QuantileQuantizedType
-  getChecked(function_ref<InFlightDiagnostic()> emitError, unsigned flags,
-             Type storageType, Type quantileType, Type expressedType,
-             ArrayRef<double> quantiles, double scale, int64_t zeroPoint,
-             int64_t storageTypeMin, int64_t storageTypeMax);
-
-  /// Verifies construction invariants and issues errors/warnings.
-  static LogicalResult
-  verifyInvariants(function_ref<InFlightDiagnostic()> emitError, unsigned flags,
-                   Type storageType, Type quantileType, Type expressedType,
-                   ArrayRef<double> quantiles, double scale, int64_t zeroPoint,
-                   int64_t storageTypeMin, int64_t storageTypeMax);
-
-  static bool classof(mlir::Type type);
-
-  /// Gets the quantileType
-  Type getQuantileType() const;
-
-  /// Gets the quantileType bit width
-  unsigned getQuantileTypeIntegralWidth() const;
-
-  /// Gets the quantile values
-  ArrayRef<double> getQuantiles() const;
-
-  // Fixed point values are real numbers divided by a scale.
-  // Currently, only signed storage types are treated as fixed point.
-  // A fixed point value can be obtained from an affine value by subtracting
-  // the zeroPoint.
-  // In the future, this may be explicit versus implied by type and zeroPoint.
-  bool isFixedPoint() const { return isSigned() && getZeroPoint() == 0; }
-};
-
-// clang-format off
-/// Represents per-axis QuantileQuantizedType (also known as per-channel
-/// quantization). The type of the data in the look up table is determined by
-/// the quantileType member: supported quantileType types are
-/// integer/unsigned/f4/hf8/bf8/f16/bf16/f32/f64.
-///
-/// Syntax synopsis:
-///   Per-axis, all parameters expressed:
-///     !quant<quantile[StorageType:QuantileType:ExpressedType:QuantizedDim]{Quantiles}:{QuantParams}>
-///   Per-axis, optional parameters omitted:
-///     !quant<quantile[StorageType:QuantileType]{Quantiles}:{Scale}>
-///
-///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8'
-///   QuantileType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8', 'f16', 'bf16', 'f32', 'f64'
-///   ExpressedType: 'f16', 'f32', 'bf16', 'f64'
-///   QuantizedDim: An integer value
-///   Quantiles: Quantile+
-///   Quantile: A legal double value
-///   QuantParams: (Scale ':' ZeroPoint)+
-///   Scale: A legal double value
-///   ZeroPoint: An integer value
-// clang-format on
-class QuantileQuantizedPerAxisType
-    : public Type::TypeBase<QuantileQuantizedPerAxisType,
-                            UniformQuantizedPerAxisType,
-                            detail::QuantileQuantizedPerAxisTypeStorage> {
-public:
-  using Base::Base;
-  using Base::getChecked;
-
-  static constexpr StringLiteral name = "quant.quantile_per_axis";
-
-  /// Gets an instance of the type with all parameters specified but not
-  /// checked.
-  static QuantileQuantizedPerAxisType
-  get(unsigned flags, Type storageType, Type quantileType, Type expressedType,
-      ArrayRef<double> quantiles, ArrayRef<double> scales,
-      ArrayRef<int64_t> zeroPoints, int32_t quantizedDimension,
-      int64_t storageTypeMin, int64_t storageTypeMax);
-
-  /// Gets an instance of the type with all specified parameters checked.
-  /// Returns a nullptr convertible type on failure.
-  static QuantileQuantizedPerAxisType
-  getChecked(function_ref<InFlightDiagnostic()> emitError, unsigned flags,
-             Type storageType, Type quantileType, Type expressedType,
-             ArrayRef<double> quantiles, ArrayRef<double> scales,
-             ArrayRef<int64_t> zeroPoints, int32_t quantizedDimension,
-             int64_t storageTypeMin, int64_t storageTypeMax);
-
-  /// Verifies construction invariants and issues errors/warnings.
-  static LogicalResult
-  verifyInvariants(function_ref<InFlightDiagnostic()> emitError, unsigned flags,
-                   Type storageType, Type quantileType, Type expressedType,
-                   ArrayRef<double> quantiles, ArrayRef<double> scales,
-                   ArrayRef<int64_t> zeroPoints, int32_t quantizedDimension,
-                   int64_t storageTypeMin, int64_t storageTypeMax);
-
-  static bool classof(mlir::Type type);
-
-  /// Gets the quantileType
-  Type getQuantileType() const;
-
-  /// Gets the quantileType bit width
-  unsigned getQuantileTypeIntegralWidth() const;
-
-  /// Gets the quantile values
-  ArrayRef<double> getQuantiles() const;
-
-  /// Fixed point values are real numbers divided by a scale.
-  /// Currently, only signed storage types are treated as fixed point.
-  /// A fixed point value can be obtained from an affine value by subtracting
-  /// the zeroPoint.
-  /// In the future, this may be explicit versus implied by type and zeroPoint.
-  bool isFixedPoint() const {
-    return isSigned() && !llvm::is_contained(getZeroPoints(), 0);
-  }
-};
-
 /// Represents sub-channel (also known as blockwise quantization).
 ///
 /// Syntax synopsis:
@@ -567,7 +419,7 @@ public:
 ///   ScaleZeroList  ::= ScaleZero (',' ScaleZero)*
 ///   ScaleZero ::= Scale (':' ZeroPoint)?
 ///
-///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8'
+///   StorageType: 'i'|'u' NumBits, 'f4', 'hf8', 'bf8', 'quantile'
 ///   ExpressedType: 'f16', 'f32', 'bf16', 'f64'
 ///   AxisSpec: An integer value
 ///   BlockSizeSpec: An integer value
@@ -716,6 +568,125 @@ public:
   double getMax() const;
 };
 
+/*Syntax:
+
+    ```
+    quantile-type ::= `!quant.quantile` `<` type `:` type `,` `{` float-list /
+   int-list `}`
+   (`,` `<` int `,` int `>`)? `>`
+    ```
+
+    A quantile type represents a quantile-based floating point encoding, where
+    discrete storage values are totally defined by the floating-point or integer
+   values entries in a quantile lookup table of F8/F16/F32/F64 or integer types.
+
+    Optionally, explicit minimum and maximum storage values can be specified
+    after the LUT as `<min:max>`.
+
+    This type is used for weight compression schemes like NF4 (NormalizedFloat4)
+    and similar quantile-based formats.
+
+    Example:
+
+   MLIR:
+    !quant.quantile<ui4:f16, {-1.0,-0.696,0.0,0.079,1.0}>
+    !quant.quantile<ui4:f16, {-1.0,-0.696,0.0,0.079,1.0}, <-8,7>>
+
+    As an additional explanation for better understanding and readability of the
+   above example, the quantile type can be broken down as follows:
+    - `!quant.quantile`: This indicates that we are defining a quantile type.
+    - `<ui4:f16`: This specifies the storage type and the quantile type. In this
+   case, `ui4` indicates an unsigned 4-bit integer storage type, and `f16`
+   indicates that the quantile values are represented as 16-bit floating-point
+   numbers.
+    - `{-1.0,-0.696,0.0,0.079,1.0}`: This is the quantile lookup table (LUT)
+   that defines the discrete storage values. Each value in the LUT corresponds
+   to a specific quantized value that can be stored in the `ui4` storage type.
+    - `, <-8,7>`: This optional part specifies the explicit minimum and maximum
+   storage values. In this case, the minimum storage value is -8 and the maximum
+   storage value is 7.
+*/
+
+class QuantileType
+    : public Type::TypeBase<QuantileType, Type, detail::QuantileTypeStorage,
+                            mlir::QuantStorageTypeInterface::Trait> {
+public:
+  using ImplType = detail::QuantileTypeStorage;
+  using Base::Base;
+
+  // Get the underlying type used for to store raw values.
+  Type getStorageType() const;
+
+  // Get primitive expressed type of data in quantiles.
+  // Note that we may convert FP8 data to FP16 for storage,
+  // but we should treat its expressed type as FP8 rather than FP16.
+  Type getQuantileType() const;
+
+  /// Return the quantile table of this float type.
+  ArrayRef<double> getQuantiles() const;
+
+  /// Return the explicit storage minimum, if set.
+  std::optional<int64_t> getStorageMin() const;
+
+  /// Return the explicit storage maximum, if set.
+  std::optional<int64_t> getStorageMax() const;
+
+  // Get a quantile float type with specified quantile table.
+  static QuantileType get(mlir::MLIRContext *ctx, Type storageType,
+                          Type quantileType, ArrayRef<double> quantiles = {},
+                          std::optional<int64_t> storageMin = std::nullopt,
+                          std::optional<int64_t> storageMax = std::nullopt);
+
+  static QuantileType
+  getChecked(function_ref<InFlightDiagnostic()> emitError,
+             mlir::MLIRContext *ctx, Type storageType, Type quantileType,
+             ArrayRef<double> quantiles,
+             std::optional<int64_t> storageMin = std::nullopt,
+             std::optional<int64_t> storageMax = std::nullopt);
+
+  static LogicalResult verifyInvariants(
+      function_ref<InFlightDiagnostic()> emitError, Type storageType,
+      Type quantileType, ArrayRef<double> quantiles,
+      std::optional<int64_t> storageMin, std::optional<int64_t> storageMax);
+
+  /// Methods for support type inquiry through isa, cast, and dyn_cast.
+  static bool classof(mlir::Type type);
+
+  // Printer
+  void print(mlir::AsmPrinter &printer) const;
+
+  static constexpr llvm::StringLiteral getMnemonic() { return {"quantile"}; }
+
+  static constexpr llvm::StringLiteral name = "quantile";
+
+  // Returns true if the type defaults to signed (e.g., si8, i8 or float types),
+  // false otherwise
+  bool shouldDefaultToSigned() const;
+
+  // Get the bit width of the storage type.
+  unsigned getStorageWidth() const;
+
+  // Get the default minimum and maximum values for the storage type.
+  int64_t getDefaultMinimum([[maybe_unused]] bool isSigned) const;
+  int64_t getDefaultMaximum([[maybe_unused]] bool isSigned) const;
+
+  // Get the string representation of the storage type
+  std::string getStorageTypeName([[maybe_unused]] bool isSigned) const;
+
+  // Get whether the type is a packed quantile float type
+  bool isPacked() const;
+
+  // Get the logical bit width of the quantile float type, which is the bit
+  // width of the represented floating point value.
+  unsigned getLogicalBitWidth() const;
+
+  // Get the number of quantized values stored in one byte for this quantile
+  // float type.
+  unsigned getElementsPerByte() const;
+
+  // Get the preferred alignment in bytes for this quantile float type, if any.
+  std::optional<unsigned> getPreferredAlignmentBytes() const;
+};
 } // namespace quant
 } // namespace mlir
 
