@@ -14,6 +14,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/MemorySlotInterfaces.h"
 #include "llvm/ADT/SmallVectorExtras.h"
+#include "llvm/ADT/TypeSwitch.h"
 
 using namespace mlir;
 using namespace test;
@@ -1683,19 +1684,27 @@ test::TestTensorWithFutureLayoutOp::getBufferType(
     mlir::Value value, const mlir::bufferization::BufferizationOptions &,
     const mlir::bufferization::BufferizationState &,
     llvm::SmallVector<::mlir::Value> &) {
-  auto tensorType = dyn_cast<RankedTensorType>(value.getType());
-  if (!tensorType)
-    return failure();
-
-  // Set the memref layout to the op's 'layout' attribute, ignoring
-  // any pre-existing tensor encoding. This is what lets two
-  // `test.tensor_with_layout` ops produce *bufferized* memrefs with different
-  // layouts while keeping their *tensor* result types identical -- which is
-  // required to construct SCF iter_arg/branch mismatches that the verifier
-  // still accepts.
-  auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
-  return cast<bufferization::BufferLikeType>(MemRefType::get(
-      tensorType.getShape(), tensorType.getElementType(), layout));
+  return llvm::TypeSwitch<mlir::Type,
+                          mlir::FailureOr<mlir::bufferization::BufferLikeType>>(
+             value.getType())
+      .Case([&](RankedTensorType tensorType) {
+        // Set the memref layout to the op's 'layout' attribute, ignoring
+        // any pre-existing tensor encoding. This is what lets two
+        // `test.tensor_with_layout` ops produce *bufferized* memrefs with
+        // different layouts while keeping their *tensor* result types identical
+        // -- which is required to construct SCF iter_arg/branch mismatches that
+        // the verifier still accepts.
+        auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
+        return cast<bufferization::BufferLikeType>(MemRefType::get(
+            tensorType.getShape(), tensorType.getElementType(), layout));
+      })
+      .Case([&](TestTensorType tensorType) {
+        auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
+        return cast<bufferization::BufferLikeType>(
+            TestMemrefType::get(tensorType.getContext(), tensorType.getShape(),
+                                tensorType.getElementType(), layout));
+      })
+      .Default([&](Type) { return emitError("unknown type"); });
 }
 
 LogicalResult test::TestForceNewLayoutOp::bufferize(
@@ -1722,15 +1731,23 @@ test::TestForceNewLayoutOp::getBufferType(
     mlir::Value value, const bufferization::BufferizationOptions &options,
     const bufferization::BufferizationState &,
     llvm::SmallVector<::mlir::Value> &) {
-  auto tensorType = dyn_cast<RankedTensorType>(value.getType());
-  if (!tensorType)
-    return failure();
-
-  // Set the memref layout to the op's 'layout' attribute, ignoring any
-  // pre-existing tensor encoding.
-  auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
-  return cast<bufferization::BufferLikeType>(MemRefType::get(
-      tensorType.getShape(), tensorType.getElementType(), layout));
+  return llvm::TypeSwitch<mlir::Type,
+                          mlir::FailureOr<mlir::bufferization::BufferLikeType>>(
+             value.getType())
+      .Case([&](RankedTensorType tensorType) {
+        // Set the memref layout to the op's 'layout' attribute, ignoring any
+        // pre-existing tensor encoding.
+        auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
+        return cast<bufferization::BufferLikeType>(MemRefType::get(
+            tensorType.getShape(), tensorType.getElementType(), layout));
+      })
+      .Case([&](TestTensorType tensorType) {
+        auto layout = cast<MemRefLayoutAttrInterface>(getLayout());
+        return cast<bufferization::BufferLikeType>(
+            TestMemrefType::get(tensorType.getContext(), tensorType.getShape(),
+                                tensorType.getElementType(), layout));
+      })
+      .Default([&](Type) { return emitError("unknown type"); });
 }
 
 // Define a custom builder for ManyRegionsOp declared in TestOps.td.

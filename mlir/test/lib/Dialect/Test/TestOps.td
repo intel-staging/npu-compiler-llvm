@@ -3951,7 +3951,7 @@ def TestTensorWithFutureLayoutOp
   }];
 
   let arguments = (ins TestMemRefLayoutAttr:$layout);
-  let results = (outs AnyRankedTensor:$output);
+  let results = (outs Bufferization_TensorLikeTypeInterface:$output);
   let extraClassDefinition = [{
     bool test::TestTensorWithFutureLayoutOp::bufferizesToMemoryRead(
         ::mlir::OpOperand&,
@@ -3997,10 +3997,10 @@ def TestForceNewLayoutOp
   }];
 
   let arguments = (ins
-    AnyRankedTensor:$input,
+    Bufferization_TensorLikeTypeInterface:$input,
     TestMemRefLayoutAttr:$layout
   );
-  let results = (outs AnyRankedTensor:$output);
+  let results = (outs Bufferization_TensorLikeTypeInterface:$output);
   let extraClassDefinition = [{
     bool test::TestForceNewLayoutOp::bufferizesToMemoryRead(::mlir::OpOperand&,
         const ::mlir::bufferization::AnalysisState&) {
@@ -4032,6 +4032,16 @@ def TestForceNewLayoutOp
                /*isDefinite=*/true}};
     }
   }];
+}
+
+def TestDummyCastOp : TEST_Op<"dummy_cast_op", []> {
+  let arguments = (ins
+    Arg<Bufferization_BufferLikeTypeInterface>:$source
+  );
+  let results = (outs
+    Arg<Bufferization_BufferLikeTypeInterface>:$dest
+  );
+  let assemblyFormat = "$source attr-dict `:` type($source) `to` type($dest)";
 }
 
 //===----------------------------------------------------------------------===//

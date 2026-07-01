@@ -476,9 +476,9 @@ def TestMemrefType : Test_Type<"TestMemref",
   let parameters = (ins
     ArrayRefParameter<"int64_t">:$shape,
     "mlir::Type":$elementType,
-    DefaultValuedParameter<"mlir::Attribute", "nullptr">:$memSpace
+    DefaultValuedParameter<"mlir::MemRefLayoutAttrInterface", "nullptr">:$layout
   );
-  let assemblyFormat = "`<` `[` $shape `]` `,` $elementType (`,` $memSpace^)? `>`";
+  let assemblyFormat = "`<` `[` $shape `]` `,` $elementType (`,` $layout^)? `>`";
 
   let extraClassDeclaration = [{
     // ShapedTypeInterface:
@@ -488,7 +488,7 @@ def TestMemrefType : Test_Type<"TestMemref",
     test::TestMemrefType cloneWith(std::optional<llvm::ArrayRef<int64_t>> shape,
                                    mlir::Type elementType) const {
       return test::TestMemrefType::get(
-        getContext(), shape.value_or(getShape()), elementType, getMemSpace());
+        getContext(), shape.value_or(getShape()), elementType, getLayout());
     }
   }];
 }
