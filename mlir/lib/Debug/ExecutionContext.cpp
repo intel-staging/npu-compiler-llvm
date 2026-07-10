@@ -86,8 +86,23 @@ void ExecutionContext::operator()(llvm::function_ref<void()> transform,
     case ExecutionContext::Finish:
       depthToBreak = depth - 1;
       return true;
+    case ExecutionContext::Rerun:
+      depthToBreak = std::nullopt;
+      rerunQueue.push_back(depth);
+      return true;
     }
     llvm::report_fatal_error("Unknown control request");
+  };
+
+  auto rerunCurrentActionIfRequested = [&]() -> bool {
+    if (!rerunQueue.empty() && rerunQueue.back() == depth) {
+      // If the user requested to rerun this action, we do it here.
+      rerunQueue.pop_back();
+      actionStack = info.getParent();
+      (*this)(transform, action);
+      return true;
+    }
+    return false;
   };
 
   // Try to find a breakpoint that would hit on this action.
@@ -118,6 +133,11 @@ void ExecutionContext::operator()(llvm::function_ref<void()> transform,
       observer->afterExecute(actionStack);
   }
 
-  if (depthToBreak && depth <= depthToBreak)
+  if (rerunCurrentActionIfRequested())
+    return;
+
+  if (depthToBreak && depth <= depthToBreak) {
     handleUserInput();
+    rerunCurrentActionIfRequested();
+  }
 }
