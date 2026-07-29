@@ -67,41 +67,19 @@ static Type parseStorageType(DialectAsmParser &parser, bool &isSigned) {
   return type;
 }
 
-static Type parseQuantileType(DialectAsmParser &parser) {
-  auto typeLoc = parser.getCurrentLocation();
-  Type type;
-
-  // Parse storage type (alpha_ident, integer_literal).
-  StringRef identifier;
-  unsigned storageTypeWidth = 0;
-  OptionalParseResult result = parser.parseOptionalType(type);
-  if (result.has_value()) {
-    if (!succeeded(*result))
-      return nullptr;
-
-    if (!mlir::isa<IntegerType>(type) && !mlir::isa<FloatType>(type)) {
-      parser.emitError(typeLoc, "illegal quantile type prefix");
-      return nullptr;
-    }
-  } else if (succeeded(parser.parseKeyword(&identifier))) {
-    // Otherwise, this must be an unsigned integer (`u` integer-literal)
-    if (identifier.consume_front("u")) {
-      if (identifier.getAsInteger(10, storageTypeWidth)) {
-        parser.emitError(typeLoc, "expected quantile type width");
-        return nullptr;
-      }
-      constexpr bool isSigned = false;
-      type = parser.getBuilder().getIntegerType(storageTypeWidth, isSigned);
-
-    } else {
-      parser.emitError(typeLoc, "illegal quantile type prefix");
-      return nullptr;
-    }
-  } else {
-    return nullptr;
+static ParseResult
+checkStorageRange(DialectAsmParser &parser, int64_t storageTypeMin,
+                  int64_t storageTypeMax, int64_t defaultStorageTypeMin,
+                  int64_t defaultStorageTypeMax, SMLoc minLoc, SMLoc maxLoc) {
+  if (storageTypeMin < defaultStorageTypeMin) {
+    return parser.emitError(minLoc, "illegal storage type minimum: ")
+           << storageTypeMin;
   }
-
-  return type;
+  if (storageTypeMax > defaultStorageTypeMax) {
+    return parser.emitError(maxLoc, "illegal storage type maximum: ")
+           << storageTypeMax;
+  }
+  return success();
 }
 
 static ParseResult parseStorageRange(DialectAsmParser &parser, Type storageType,
@@ -404,7 +382,6 @@ parseQuantParamListUntilRBrace(DialectAsmParser &parser, Type expressedType,
 ///   `}`
 static Type parseUniformType(DialectAsmParser &parser, bool isQuantile) {
   Type storageType;
-  Type quantileType;
   FloatType expressedType;
   unsigned typeFlags = 0;
   int64_t storageTypeMin;
@@ -438,16 +415,6 @@ static Type parseUniformType(DialectAsmParser &parser, bool isQuantile) {
     return nullptr;
   }
 
-  // Quantile type.
-  if (isQuantile) {
-    if (parser.parseColon()) {
-      return nullptr;
-    }
-    quantileType = parseQuantileType(parser);
-    if (!quantileType) {
-      return nullptr;
-    }
-  }
 
   // Expressed type.
   if (parser.parseColon() || parser.parseType(expressedType)) {
@@ -628,26 +595,6 @@ static void printStorageType(QuantizedType type, DialectAsmPrinter &out) {
   if (type.hasStorageTypeBounds()) {
     out << "<" << type.getStorageTypeMin() << ":" << type.getStorageTypeMax()
         << ">";
-  }
-}
-
-static void printQuantileType(Type quantileType, DialectAsmPrinter &out) {
-  if (auto intType = llvm::dyn_cast<IntegerType>(quantileType)) {
-    const unsigned storageTypeWidth = intType.getWidth();
-    if (intType.isUnsigned()) {
-      out << ":u" << storageTypeWidth;
-    } else {
-      out << ":i" << storageTypeWidth;
-    }
-  } else if (mlir::isa<Float8E5M2Type>(quantileType)) {
-    out << ":f8E5M2";
-  } else if (mlir::isa<Float8E4M3FNType>(quantileType)) {
-    out << ":f8E4M3FN";
-  } else if (mlir::isa<Float4E2M1FNType>(quantileType)) {
-    out << ":f4E2M1FN";
-  } else {
-    // Float types
-    out << ":" << quantileType;
   }
 }
 

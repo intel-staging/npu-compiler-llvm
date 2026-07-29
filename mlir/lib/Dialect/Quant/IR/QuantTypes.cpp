@@ -327,8 +327,7 @@ LogicalResult UniformQuantizedType::verifyInvariants(
 }
 
 bool UniformQuantizedType::classof(mlir::Type type) {
-  return type.getTypeID() == mlir::TypeID::get<UniformQuantizedType>() ||
-         type.getTypeID() == mlir::TypeID::get<QuantileQuantizedType>();
+  return type.getTypeID() == mlir::TypeID::get<UniformQuantizedType>();
 }
 
 double UniformQuantizedType::getScale() const { return getImpl()->scale; }
@@ -401,8 +400,7 @@ LogicalResult UniformQuantizedPerAxisType::verifyInvariants(
 }
 
 bool UniformQuantizedPerAxisType::classof(mlir::Type type) {
-  return type.getTypeID() == mlir::TypeID::get<UniformQuantizedPerAxisType>() ||
-         type.getTypeID() == mlir::TypeID::get<QuantileQuantizedPerAxisType>();
+  return type.getTypeID() == mlir::TypeID::get<UniformQuantizedPerAxisType>();
 }
 
 ArrayRef<double> UniformQuantizedPerAxisType::getScales() const {
