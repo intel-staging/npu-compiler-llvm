@@ -42,7 +42,9 @@ unsigned QuantizedType::getFlags() const {
 }
 
 bool QuantizedType::classof(Type type) {
-  return llvm::isa<QuantDialect>(type.getDialect());
+  return llvm::isa<AnyQuantizedType, UniformQuantizedType,
+                   UniformQuantizedPerAxisType, UniformQuantizedSubChannelType,
+                   CalibratedQuantizedType>(type);
 }
 
 LogicalResult
