@@ -504,7 +504,7 @@ private:
 public:
   /// Create an operation of specific op type at the current insertion point.
   template <typename OpTy, typename... Args>
-  // E-221686: [[deprecated("Use OpTy::create instead")]]
+  [[deprecated("Use OpTy::create instead")]]
   OpTy create(Location location, Args &&...args) {
     OperationState state(location,
                          getCheckRegisteredInfo<OpTy>(location.getContext()));
