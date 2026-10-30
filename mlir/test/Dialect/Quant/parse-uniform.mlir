@@ -264,3 +264,56 @@ func.func @parse() -> !qalias {
   return %0 : !qalias
 }
 
+// -----
+// Negative scale checking
+// CHECK: !quant.uniform<i8:f32, -2.000000e+02>
+!qalias = !quant.uniform<i8:f32, -2.0e+2>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
+
+// -----
+// Zero scale checking
+// CHECK: !quant.uniform<i8:f32, 0.000000e+00>
+!qalias = !quant.uniform<i8:f32, 0.0>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
+
+// -----
+// Per axis negative scale checking
+// CHECK: !quant.uniform<i8:f32:1, {-2.000000e+02,-9.987200e-01:120}>
+!qalias = !quant.uniform<i8:f32:1, {-2.0e+2,-0.99872:120}>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
+
+// -----
+// Sub-channel negative scale checking
+// CHECK: !quant.uniform<i8:f32:{0:1, 1:2}, {{\{}}{-2.000000e+02:120, 5.000000e-01:127}, {2.000000e+02, -5.000000e-01}}>
+!qalias = !quant.uniform<i8:f32:{0:1, 1:2}, {{-2.0e+2:120,0.5:127}, {2.0e+2,-0.5}}>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
+
+// -----
+// QuantileType storage with negative scale
+// CHECK: !quant.uniform<!quant.quantile<f4E2M1FN:f16, {{.*}}}>:f32, -2.000000e+02>
+!qalias = !quant.uniform<!quant.quantile<f4E2M1FN:f16, {-1.0000,-0.8667,-0.7333,-0.6000,-0.4667,-0.3333,-0.2000,-0.0667,0.0667,0.2000,0.3333,0.4667,0.6000,0.7333,0.8667,1.0000}>:f32, -2.0e+2>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
+
+// -----
+// QuantileType storage with per-axis negative scales
+// CHECK: !quant.uniform<!quant.quantile<f4E2M1FN:f16, {{.*}}}>:f32:1, {-2.000000e+02,-9.987200e-01:120}>
+!qalias = !quant.uniform<!quant.quantile<f4E2M1FN:f16, {-1.0000,-0.8667,-0.7333,-0.6000,-0.4667,-0.3333,-0.2000,-0.0667,0.0667,0.2000,0.3333,0.4667,0.6000,0.7333,0.8667,1.0000}>:f32:1, {-2.0e+2,-0.99872:120}>
+func.func @parse() -> !qalias {
+  %0 = "foo"() : () -> !qalias
+  return %0 : !qalias
+}
