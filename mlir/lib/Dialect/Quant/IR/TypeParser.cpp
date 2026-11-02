@@ -15,6 +15,8 @@
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/SmallVectorExtras.h"
 
+#include <cmath>
+
 using namespace mlir;
 using namespace quant;
 
@@ -174,11 +176,16 @@ static LogicalResult
 isScaleInExpressedTypeRange(function_ref<InFlightDiagnostic()> emitError,
                             Type expressedType, double scale) {
   auto floatType = cast<FloatType>(expressedType);
+  const llvm::fltSemantics &semantics = floatType.getFloatSemantics();
+  // NPU: negative scales are allowed, so the lower bound is the most negative
+  // finite value of the expressed type rather than its smallest positive one
+  // (formats without a sign bit keep the smallest positive value).
   double minScale =
-      APFloat::getSmallest(floatType.getFloatSemantics()).convertToDouble();
-  double maxScale =
-      APFloat::getLargest(floatType.getFloatSemantics()).convertToDouble();
-  if (scale < minScale || scale > maxScale)
+      APFloat::semanticsHasSignedRepr(semantics)
+          ? APFloat::getLargest(semantics, /*Negative=*/true).convertToDouble()
+          : APFloat::getSmallest(semantics).convertToDouble();
+  double maxScale = APFloat::getLargest(semantics).convertToDouble();
+  if (scale < minScale || scale > maxScale || std::isnan(scale))
     return emitError() << "scale " << scale << " out of expressed type range ["
                        << minScale << ", " << maxScale << "]";
   return success();

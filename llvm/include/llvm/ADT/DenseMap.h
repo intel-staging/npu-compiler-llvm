@@ -1224,7 +1224,10 @@ private:
                     static_cast<unsigned>(NextPowerOf2(MinNumBuckets - 1)));
   }
 
-  bool maybeMoveFast(SmallDenseMap &&Other) {
+  // Always inline: otherwise GCC's IPA-ICF may fold instances for different
+  // value types into one and then report -Warray-bounds on the access through
+  // the mismatched type.
+  LLVM_ATTRIBUTE_ALWAYS_INLINE bool maybeMoveFast(SmallDenseMap &&Other) {
     if (Other.Small)
       return false;
 

@@ -126,7 +126,12 @@ protected:
     // provide three pointers worth of storage here.
     // This is mutable as an inlined `const unique_function<void() const>` may
     // still modify its own mutable members.
-    alignas(InlineStorageAlign) mutable std::byte Inline[InlineStorageSize];
+    // Zero-initialized so that the trivial-move path (memcpy of the whole
+    // inline buffer) never reads indeterminate bytes, e.g. when the stored
+    // callable is an empty lambda; GCC diagnoses this otherwise
+    // (-Wmaybe-uninitialized).
+    alignas(InlineStorageAlign) mutable std::byte Inline[InlineStorageSize] =
+        {};
   } Storage;
 
   CallPtrT CallPtr = nullptr;

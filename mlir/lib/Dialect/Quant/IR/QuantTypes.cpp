@@ -22,10 +22,16 @@ using namespace mlir::quant::detail;
 
 namespace {
 
-// Return the minimum scale representable in a given float type
+// Return the minimum scale representable in a given float type.
+// NPU: negative scales are allowed, so this is the most negative finite value
+// of the expressed type rather than its smallest positive one (formats without
+// a sign bit keep the smallest positive value).
 double getMinScale(Type expressedType) {
   auto floatType = cast<FloatType>(expressedType);
-  return APFloat::getSmallest(floatType.getFloatSemantics()).convertToDouble();
+  const llvm::fltSemantics &semantics = floatType.getFloatSemantics();
+  if (!APFloat::semanticsHasSignedRepr(semantics))
+    return APFloat::getSmallest(semantics).convertToDouble();
+  return APFloat::getLargest(semantics, /*Negative=*/true).convertToDouble();
 }
 
 // Return the maximum scale representable in a given float type
@@ -41,7 +47,9 @@ unsigned QuantizedType::getFlags() const {
 }
 
 bool QuantizedType::classof(Type type) {
-  return llvm::isa<QuantDialect>(type.getDialect());
+  return llvm::isa<AnyQuantizedType, UniformQuantizedType,
+                   UniformQuantizedPerAxisType, UniformQuantizedSubChannelType,
+                   CalibratedQuantizedType>(type);
 }
 
 LogicalResult
@@ -320,7 +328,7 @@ LogicalResult UniformQuantizedType::verifyInvariants(
   // Verify scale.
   double minScale = getMinScale(expressedType);
   double maxScale = getMaxScale(expressedType);
-  if (scale < minScale || scale > maxScale)
+  if (scale < minScale || scale > maxScale || std::isnan(scale))
     return emitError() << "scale out of expressed type range [" << minScale
                        << ", " << maxScale << "]";
 
@@ -384,7 +392,7 @@ LogicalResult UniformQuantizedPerAxisType::verifyInvariants(
   double minScale = getMinScale(expressedType);
   double maxScale = getMaxScale(expressedType);
   for (double scale : scales) {
-    if (scale < minScale || scale > maxScale)
+    if (scale < minScale || scale > maxScale || std::isnan(scale))
       return emitError() << "scale out of expressed type range [" << minScale
                          << ", " << maxScale << "]";
   }

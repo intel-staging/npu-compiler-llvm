@@ -22,7 +22,7 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
         created).
       }],
       "bool", "isLegalToInline",
-      (ins "::mlir::Operation *":$call, "::mlir::Operation *":$callable, 
+      (ins "::mlir::Operation *":$call, "::mlir::Operation *":$callable,
            "bool":$wouldBeCloned),
       [{
         return false;
@@ -117,17 +117,17 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
 
           ```mlir
           func @foo(i32) -> i32 { ... }
-        
+
           // Mismatched input operand ... = foo.call @foo(%input : i16) -> i32
-        
+
           // Mismatched result type.
           ... = foo.call @foo(%input : i32) -> i16
           ```
-        
+
         NOTE: This hook may be invoked before the 'isLegal' checks above.
       }],
       "::mlir::Operation *", "materializeCallConversion",
-      (ins "::mlir::OpBuilder &":$builder, "::mlir::Value":$input, 
+      (ins "::mlir::OpBuilder &":$builder, "::mlir::Value":$input,
            "::mlir::Type":$resultType, "::mlir::Location":$conversionLoc),
       [{
         return nullptr;
@@ -144,7 +144,7 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
         example use case is the insertion of copies for by value arguments.
       }],
       "::mlir::Value", "handleArgument",
-      (ins "::mlir::OpBuilder &":$builder, "::mlir::Operation *":$call, 
+      (ins "::mlir::OpBuilder &":$builder, "::mlir::Operation *":$call,
            "::mlir::Operation *":$callable, "::mlir::Value":$argument,
            "::mlir::DictionaryAttr":$argumentAttrs),
       [{
@@ -163,7 +163,7 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
         results. NOTE: This hook is invoked after inlining the `callable` region.
       }],
       "::mlir::Value", "handleResult",
-      (ins "::mlir::OpBuilder &":$builder, "::mlir::Operation *":$call, 
+      (ins "::mlir::OpBuilder &":$builder, "::mlir::Operation *":$call,
            "::mlir::Operation *":$callable, "::mlir::Value":$result,
            "::mlir::DictionaryAttr":$resultAttrs),
       [{
@@ -175,7 +175,7 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
         is invoked before inlined terminator operations have been processed.
       }],
       "void", "processInlinedCallBlocks",
-      (ins "::mlir::Operation *":$call, 
+      (ins "::mlir::Operation *":$call,
            "::mlir::iterator_range<::mlir::Region::iterator>":$inlinedBlocks),
       [{}]
     >,
@@ -187,6 +187,25 @@ def DialectInlinerInterface : DialectInterface<"DialectInlinerInterface"> {
       (ins "::mlir::iterator_range<::mlir::Region::iterator>":$inlinedBlocks),
       [{
         return true;
+      }]
+    >,
+    InterfaceMethod<[{
+        Hook to cleanup IR before erase call op
+      }],
+      "void", "eraseCall",
+      (ins "::mlir::Operation *":$call),
+      [{
+        call->erase();
+      }]
+    >,
+    InterfaceMethod<[{
+        Hook to get proper place where callable region will be inlined;
+        by default returns block of the call operation
+      }],
+      "std::tuple<::mlir::Block*, ::mlir::Block::iterator>", "getInlineBlockAndPoint",
+      (ins "::mlir::Operation *":$call),
+      [{
+        return std::make_tuple(call->getBlock(), std::next(call->getIterator()));
       }]
     >
   ];

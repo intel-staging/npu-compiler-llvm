@@ -18,6 +18,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/Region.h"
 #include "mlir/IR/ValueRange.h"
+#include "mlir/IR/Operation.h"
 #include <optional>
 
 namespace mlir {
